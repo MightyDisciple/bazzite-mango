@@ -40,6 +40,7 @@ cmake \
   -DCMAKE_C_FLAGS="-Wno-error=maybe-uninitialized" \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DENABLE_BACKTRACE=0 \
+  -DOPTIMIZE_FOR_NATIVE=OFF \
   -DENABLE_WAYLAND=1 \
   -DENABLE_X11=0 \
   -DENABLE_PULSEAUDIO=0 \
