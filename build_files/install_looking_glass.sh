@@ -8,7 +8,6 @@ readonly SOURCE_DIR="/tmp/looking-glass"
 readonly BUILD_DIR="${SOURCE_DIR}/client/build"
 
 readonly BUILD_PACKAGES=(
-  binutils-devel
   cmake
   fontconfig-devel
   gcc
@@ -40,6 +39,7 @@ cmake \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_FLAGS="-Wno-error=maybe-uninitialized" \
   -DCMAKE_INSTALL_PREFIX=/usr \
+  -DENABLE_BACKTRACE=0 \
   -DENABLE_WAYLAND=1 \
   -DENABLE_X11=0 \
   -DENABLE_PULSEAUDIO=0 \
