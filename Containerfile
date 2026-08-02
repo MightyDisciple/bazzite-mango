@@ -3,6 +3,10 @@ FROM scratch AS ctx
 COPY build_files /
 COPY system_files /system_files
 
+# Optional kernel modules built and signed by Universal Blue for Bazzite's OGC
+# kernel. Looking Glass needs kvmfr from the extra module set.
+FROM ghcr.io/ublue-os/akmods-extra:ogc-44 AS akmods-extra
+
 # Base Image
 FROM ghcr.io/ublue-os/bazzite-dx-nvidia-gnome:stable AS base
 ## Other possible base images include:
@@ -25,6 +29,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 FROM base
 
 COPY --from=looking-glass-builder /out/ /
+COPY --from=akmods-extra /rpms /tmp/akmods-extra
 
 ### [IM]MUTABLE /opt
 ## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
