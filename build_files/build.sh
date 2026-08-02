@@ -29,14 +29,6 @@ dnf5 install -y \
   noctalia \
   pipewire-libs
 
-# Install Universal Blue's pre-built kvmfr module matching the OGC/Fedora 44
-# kernel from the akmods-extra image copied by the Containerfile.
-dnf5 install -y /tmp/akmods-extra/kmods/kmod-kvmfr-*.rpm
-rm -rf /tmp/akmods-extra
-
-# Do not publish an image whose Looking Glass client has no matching module.
-find /usr/lib/modules -type f -name 'kvmfr.ko*' -print -quit | grep -q .
-
 # The package remains installed, but the third-party repository does not stay
 # enabled on the resulting system.
 dnf5 -y copr disable jdxcode/mise
