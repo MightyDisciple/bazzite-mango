@@ -38,6 +38,7 @@ cmake \
   -S "${SOURCE_DIR}/client" \
   -B "${BUILD_DIR}" \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-Wno-error=maybe-uninitialized" \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DENABLE_WAYLAND=1 \
   -DENABLE_X11=0 \
