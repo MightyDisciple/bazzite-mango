@@ -27,8 +27,7 @@ dnf5 install -y \
   nettle \
   niri \
   noctalia \
-  pipewire-libs \
-  wayland-libs
+  pipewire-libs
 
 # The package remains installed, but the third-party repository does not stay
 # enabled on the resulting system.

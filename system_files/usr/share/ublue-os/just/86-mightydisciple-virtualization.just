@@ -1,7 +1,9 @@
-# Toggle the dedicated RTX 5080 between the Bazzite host and VFIO passthrough.
-rtx5080-vfio ACTION="status":
+# Manage workstation virtualization, RTX 5080 passthrough and Looking Glass.
+[group("MightyDisciple")]
+workstation-virtualization ACTION="":
     #!/usr/bin/bash
     set -euo pipefail
+    source /usr/lib/ujust/ujust.sh
 
     readonly gpu_pci="0000:01:00.0"
     readonly audio_pci="0000:01:00.1"
@@ -33,8 +35,25 @@ rtx5080-vfio ACTION="status":
         }
     }
 
+    if [[ -z "${action}" ]]; then
+        selection=$(Choose \
+            "Enable RTX 5080 passthrough" \
+            "Disable RTX 5080 passthrough" \
+            "Show RTX 5080 passthrough status" \
+            "Enable Looking Glass KVMFR" \
+            "Open Bazzite virtualization setup")
+
+        case "${selection}" in
+            "Enable RTX 5080 passthrough") action="rtx-on" ;;
+            "Disable RTX 5080 passthrough") action="rtx-off" ;;
+            "Show RTX 5080 passthrough status") action="status" ;;
+            "Enable Looking Glass KVMFR") action="kvmfr" ;;
+            "Open Bazzite virtualization setup") action="setup" ;;
+        esac
+    fi
+
     case "${action,,}" in
-        on)
+        rtx-on)
             verify_hardware
             rpm-ostree initramfs --enable
             rpm-ostree kargs \
@@ -47,7 +66,7 @@ rtx5080-vfio ACTION="status":
                 --append-if-missing="${vfio_ids}"
             echo "RTX 5080 passthrough is staged. Reboot to activate it."
             ;;
-        off)
+        rtx-off)
             rpm-ostree kargs --delete-if-present="${vfio_ids}"
             echo "RTX 5080 host binding is staged. Reboot to return it to Bazzite."
             ;;
@@ -61,8 +80,14 @@ rtx5080-vfio ACTION="status":
             lspci -nnk -s 01:00.0
             lspci -nnk -s 01:00.1
             ;;
+        kvmfr)
+            ujust setup-virtualization kvmfr
+            ;;
+        setup)
+            ujust setup-virtualization
+            ;;
         *)
-            echo "Usage: ujust rtx5080-vfio {on|off|status}" >&2
+            echo "Usage: ujust workstation-virtualization {rtx-on|rtx-off|status|kvmfr|setup}" >&2
             exit 2
             ;;
     esac
