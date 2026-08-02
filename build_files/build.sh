@@ -18,13 +18,26 @@ cp -avf "/ctx/system_files"/. /
 dnf5 -y copr enable jdxcode/mise
 
 dnf5 install -y \
+  fontconfig \
+  libdecor \
+  libglvnd-egl \
+  libsamplerate \
+  libxkbcommon \
   mise \
+  nettle \
   niri \
-  noctalia
+  noctalia \
+  pipewire-libs \
+  wayland-libs
 
 # The package remains installed, but the third-party repository does not stay
 # enabled on the resulting system.
 dnf5 -y copr disable jdxcode/mise
+
+# Looking Glass is built in a separate Containerfile stage. Verify that its
+# client and all runtime libraries made it into the final image.
+test -x /usr/bin/looking-glass-client
+! ldd /usr/bin/looking-glass-client | grep -q 'not found'
 
 # Use a COPR Example:
 #
