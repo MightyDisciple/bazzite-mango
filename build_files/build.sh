@@ -15,9 +15,16 @@ cp -avf "/ctx/system_files"/. /
 # Keep the custom image deliberately small. Noctalia v5 is packaged in the
 # official Fedora repositories from Fedora 44 onward, so Terra is neither
 # needed nor enabled in the resulting image.
+dnf5 -y copr enable jdxcode/mise
+
 dnf5 install -y \
+  mise \
   niri \
   noctalia
+
+# The package remains installed, but the third-party repository does not stay
+# enabled on the resulting system.
+dnf5 -y copr disable jdxcode/mise
 
 # Use a COPR Example:
 #
