@@ -55,7 +55,9 @@ workstation-virtualization ACTION="":
     case "${action,,}" in
         rtx-on)
             verify_hardware
-            rpm-ostree initramfs --enable
+            # The Bazzite image initramfs already includes the VFIO drivers.
+            # Keep this toggle limited to kernel arguments so bootc upgrades
+            # remain possible without local rpm-ostree modifications.
             rpm-ostree kargs \
                 --append-if-missing="amd_iommu=on" \
                 --append-if-missing="iommu=pt" \
