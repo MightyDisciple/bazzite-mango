@@ -38,7 +38,7 @@ dnf5 -y copr disable jdxcode/mise
 
 # Fail the image build early if either application is missing.
 test -x /usr/bin/blender
-test -x /usr/local/bin/unity
+test -x /usr/bin/unity
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
