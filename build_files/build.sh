@@ -17,6 +17,11 @@ cp -avf "/ctx/system_files"/. /
 # needed nor enabled in the resulting image.
 dnf5 -y copr enable jdxcode/mise
 
+# Unity distributes Unity Hub through its own signed RPM repository. Keep the
+# repository available only while building the image.
+install -Dm644 /ctx/repos/unityhub.repo \
+  /etc/yum.repos.d/unityhub.repo
+
 dnf5 install -y \
   blender \
   fontconfig \
@@ -28,17 +33,16 @@ dnf5 install -y \
   nettle \
   niri \
   noctalia \
-  pipewire-libs
+  pipewire-libs \
+  unityhub
 
+# Keep third-party repositories disabled in the resulting system image.
 dnf5 -y copr disable jdxcode/mise
-
-# Install Unity's standalone CLI instead of Unity Hub. Editors are installed
-# per user with `unity install`, avoiding Hub's composefs disk-space check.
-/ctx/install_unity_cli.sh
+rm -f /etc/yum.repos.d/unityhub.repo
 
 # Fail the image build early if either application is missing.
 test -x /usr/bin/blender
-test -x /usr/bin/unity
+test -x /usr/bin/unityhub
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.

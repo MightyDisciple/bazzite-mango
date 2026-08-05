@@ -20,10 +20,7 @@ FROM base AS looking-glass-builder
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
-    /ctx/install_looking_glass.sh && \
-    gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-      -o /out/usr/lib64/unity-cli-statfs-compat.so \
-      /ctx/unity-statfs-compat.c -ldl
+    /ctx/install_looking_glass.sh
 
 FROM base
 
