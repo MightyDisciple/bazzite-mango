@@ -18,7 +18,6 @@ cp -avf "/ctx/system_files"/. /
 dnf5 -y copr enable jdxcode/mise
 
 dnf5 install -y \
-  blender \
   fontconfig \
   libdecor \
   libglvnd-egl \
@@ -31,9 +30,6 @@ dnf5 install -y \
   pipewire-libs
 
 dnf5 -y copr disable jdxcode/mise
-
-# Fail the image build early if Blender is missing.
-test -x /usr/bin/blender
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
