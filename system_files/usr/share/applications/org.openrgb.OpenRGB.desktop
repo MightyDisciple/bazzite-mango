@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=OpenRGB
+Comment=Control RGB lighting
+Exec=openrgb
+Icon=preferences-color
+Categories=Settings;HardwareSettings;
+Terminal=false
