@@ -93,23 +93,13 @@ sudoif command *args:
 #
 
 # Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag $cache_repository="":
+build $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
     set -euox pipefail
 
-    CACHE_FROM_ARGS=()
-    CACHE_TO_ARGS=()
+    BUILD_ARGS=()
     LABELS=()
-    if [[ -n "${cache_repository}" ]]; then
-        CACHE_FROM_ARGS+=(
-            "--layers"
-            "--cache-from" "${cache_repository}"
-        )
-        CACHE_TO_ARGS+=(
-            "--cache-to" "${cache_repository}"
-        )
-    fi
     if [[ -z "$(git status -s)" ]]; then
         GIT_SHA=$(git rev-parse --short HEAD)
         LABELS+=("--label" "io.artifacthub.package.readme-url=https://raw.githubusercontent.com/{{ repo_organization }}/{{ image_name }}/${GIT_SHA}/README.md")
@@ -132,19 +122,9 @@ build $target_image=image_name $tag=default_tag $cache_repository="":
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
     # This actually builds the image!
-    PODMAN_BUILD_ARGS=("${CACHE_FROM_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
+    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
 
-    # Buildah pushes cache images while a multi-stage build is still running.
-    # A registry/cache race must not discard an otherwise valid image build.
-    # Retry while still consuming the existing remote cache, but without
-    # updating it. Layers pushed by the first attempt remain useful later.
-    if ! podman build "${PODMAN_BUILD_ARGS[@]}" "${CACHE_TO_ARGS[@]}" .; then
-        if [[ ${#CACHE_TO_ARGS[@]} -eq 0 ]]; then
-            exit 1
-        fi
-        echo "Remote cache update failed; retrying without --cache-to." >&2
-        podman build "${PODMAN_BUILD_ARGS[@]}" .
-    fi
+    podman build "${PODMAN_BUILD_ARGS[@]}" .
 
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:
