@@ -12,13 +12,14 @@ cp -avf "/ctx/system_files"/. /
 # List of rpmfusion packages can be found here:
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/44/x86_64/repoview/index.html&protocol=https&redirect=1
 
-# Keep the custom image deliberately small. Noctalia v5 is packaged in the
-# official Fedora repositories from Fedora 44 onward, so Terra is neither
-# needed nor enabled in the resulting image.
+# Keep the custom image deliberately small. Noctalia v5 and OpenRGB are
+# packaged in Fedora 44. CoolerControl comes from Terra; keep that repository
+# disabled in the deployed image and enable it only for this image build.
 dnf5 -y copr enable jdxcode/mise
 
 dnf5 install -y \
   blender \
+  openrgb \
   fontconfig \
   libdecor \
   libglvnd-egl \
@@ -30,10 +31,19 @@ dnf5 install -y \
   noctalia \
   pipewire-libs
 
+dnf5 install -y --enable-repo=terra \
+  coolercontrol \
+  liquidctl
+
 dnf5 -y copr disable jdxcode/mise
 
 # Fail the image build early if Blender is missing.
 test -x /usr/bin/blender
+
+# Keep cooling and RGB control part of the image instead of rpm-ostree layers.
+rpm -q coolercontrol liquidctl openrgb
+test -x /usr/bin/coolercontrol
+test -x /usr/bin/openrgb
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
@@ -50,3 +60,4 @@ test -x /usr/bin/looking-glass-client
 #### Example for enabling a System Unit File
 
 systemctl enable podman.socket
+systemctl enable coolercontrold.service
