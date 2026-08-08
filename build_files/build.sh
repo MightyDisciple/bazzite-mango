@@ -25,7 +25,6 @@ dnf5 remove -y code
 dnf5 install -y \
   blender \
   borgbackup \
-  borgmatic \
   fontconfig \
   libdecor \
   libglvnd-egl \
@@ -36,6 +35,10 @@ dnf5 install -y \
   niri \
   noctalia \
   pipewire-libs
+
+# Vorta provides the desktop interface for configuring, scheduling, browsing,
+# and restoring Borg backups. Keep Borg itself installed for recovery use.
+dnf5 install -y vorta
 
 # Keep Fedora's rules package for package integration, but replace its RC2 rule
 # with the matching upstream RC3 release below. The similarly named "openrgb"
@@ -82,13 +85,13 @@ dnf5 -y copr disable jdxcode/mise
 test -x /usr/bin/blender
 
 # Keep cooling and RGB control part of the image instead of rpm-ostree layers.
-rpm -q borgbackup borgmatic coolercontrol liquidctl openrgb-udev-rules zed
+rpm -q borgbackup coolercontrol liquidctl openrgb-udev-rules vorta zed
 ! rpm -q code
 test -x /usr/bin/coolercontrol
 test -x /usr/bin/openrgb
 command -v zed
 command -v borg
-command -v borgmatic
+command -v vorta
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
