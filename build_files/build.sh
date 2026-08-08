@@ -30,9 +30,10 @@ dnf5 install -y \
   noctalia \
   pipewire-libs
 
-# Install only OpenRGB's device permissions from Fedora. The similarly named
-# package in ublue-os/akmods pulls in a stale akmod-openrgb and tries to compile
-# a kernel module inside the bootc build. Our USB controllers do not need it.
+# Keep Fedora's rules package for package integration, but replace its RC2 rule
+# with the matching upstream RC3 release below. The similarly named "openrgb"
+# package in ublue-os/akmods pulls in a stale akmod-openrgb and must not be
+# installed in this bootc stage. Our USB controllers do not need that module.
 dnf5 install -y \
   --disable-repo='copr:copr.fedorainfracloud.org:ublue-os:akmods' \
   openrgb-udev-rules
@@ -42,10 +43,14 @@ dnf5 install -y \
 # OpenRGB AppImage. Updating requires changing both URL and SHA-256.
 openrgb_url='https://codeberg.org/OpenRGB/OpenRGB/releases/download/release_candidate_1.0rc3/OpenRGB_1.0rc3_x86_64_6fbcf62.AppImage'
 openrgb_sha256='37f25ecb9c0f52cd3b916d760c1df61a8b372c8b124115555200fe6dfe56f2a0'
+openrgb_rules_url='https://codeberg.org/OpenRGB/OpenRGB/releases/download/release_candidate_1.0rc3/60-openrgb.rules'
+openrgb_rules_sha256='cae379493ba85f69f864d5699f320f7db0546b733c4410a0aab7040b97b55bbf'
 install -d /usr/libexec/openrgb
 curl --fail --location --retry 3 --output /usr/libexec/openrgb/OpenRGB.AppImage "${openrgb_url}"
 echo "${openrgb_sha256}  /usr/libexec/openrgb/OpenRGB.AppImage" | sha256sum --check --strict
 chmod 0755 /usr/libexec/openrgb/OpenRGB.AppImage
+curl --fail --location --retry 3 --output /usr/lib/udev/rules.d/60-openrgb.rules "${openrgb_rules_url}"
+echo "${openrgb_rules_sha256}  /usr/lib/udev/rules.d/60-openrgb.rules" | sha256sum --check --strict
 
 dnf5 install -y --enable-repo=terra \
   coolercontrol \
