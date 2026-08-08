@@ -48,12 +48,20 @@ openrgb_rules_sha256='cae379493ba85f69f864d5699f320f7db0546b733c4410a0aab7040b97
 openrgb_effects_url='https://codeberg.org/OpenRGB/OpenRGBEffectsPlugin/releases/download/release_candidate_1.0rc2/OpenRGBEffectsPlugin_1.0rc2_Linux_amd64_415dc20.so'
 openrgb_effects_sha256='2f3c2b3c2c850e7148b4aa459bd41ccf9c56bd26fd00809fa19126ac5ad8dbc0'
 install -d /usr/libexec/openrgb/plugins
-curl --fail --location --retry 3 --output /usr/libexec/openrgb/OpenRGB.AppImage "${openrgb_url}"
+curl_options=(
+  --fail
+  --http1.1
+  --location
+  --retry 5
+  --retry-all-errors
+  --retry-delay 2
+)
+curl "${curl_options[@]}" --output /usr/libexec/openrgb/OpenRGB.AppImage "${openrgb_url}"
 echo "${openrgb_sha256}  /usr/libexec/openrgb/OpenRGB.AppImage" | sha256sum --check --strict
 chmod 0755 /usr/libexec/openrgb/OpenRGB.AppImage
-curl --fail --location --retry 3 --output /usr/lib/udev/rules.d/60-openrgb.rules "${openrgb_rules_url}"
+curl "${curl_options[@]}" --output /usr/lib/udev/rules.d/60-openrgb.rules "${openrgb_rules_url}"
 echo "${openrgb_rules_sha256}  /usr/lib/udev/rules.d/60-openrgb.rules" | sha256sum --check --strict
-curl --fail --location --retry 3 --output /usr/libexec/openrgb/plugins/OpenRGBEffectsPlugin.so "${openrgb_effects_url}"
+curl "${curl_options[@]}" --output /usr/libexec/openrgb/plugins/OpenRGBEffectsPlugin.so "${openrgb_effects_url}"
 echo "${openrgb_effects_sha256}  /usr/libexec/openrgb/plugins/OpenRGBEffectsPlugin.so" | sha256sum --check --strict
 
 dnf5 install -y --enable-repo=terra \
