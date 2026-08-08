@@ -24,6 +24,8 @@ dnf5 remove -y code
 
 dnf5 install -y \
   blender \
+  borgbackup \
+  borgmatic \
   fontconfig \
   libdecor \
   libglvnd-egl \
@@ -80,11 +82,13 @@ dnf5 -y copr disable jdxcode/mise
 test -x /usr/bin/blender
 
 # Keep cooling and RGB control part of the image instead of rpm-ostree layers.
-rpm -q coolercontrol liquidctl openrgb-udev-rules zed
+rpm -q borgbackup borgmatic coolercontrol liquidctl openrgb-udev-rules zed
 ! rpm -q code
 test -x /usr/bin/coolercontrol
 test -x /usr/bin/openrgb
 command -v zed
+command -v borg
+command -v borgmatic
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
