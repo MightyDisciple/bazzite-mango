@@ -17,6 +17,11 @@ cp -avf "/ctx/system_files"/. /
 # disabled in the deployed image and enable it only for this image build.
 dnf5 -y copr enable jdxcode/mise
 
+# The Bazzite DX base image includes Visual Studio Code. Replace it with Zed
+# so the remote editor is managed as part of the image instead of as a local
+# rpm-ostree override. Zed is provided by Bazzite's existing Terra repository.
+dnf5 remove -y code
+
 dnf5 install -y \
   blender \
   fontconfig \
@@ -66,7 +71,8 @@ echo "${openrgb_effects_sha256}  /usr/libexec/openrgb/plugins/OpenRGBEffectsPlug
 
 dnf5 install -y --enable-repo=terra \
   coolercontrol \
-  liquidctl
+  liquidctl \
+  zed
 
 dnf5 -y copr disable jdxcode/mise
 
@@ -74,9 +80,11 @@ dnf5 -y copr disable jdxcode/mise
 test -x /usr/bin/blender
 
 # Keep cooling and RGB control part of the image instead of rpm-ostree layers.
-rpm -q coolercontrol liquidctl openrgb-udev-rules
+rpm -q coolercontrol liquidctl openrgb-udev-rules zed
+! rpm -q code
 test -x /usr/bin/coolercontrol
 test -x /usr/bin/openrgb
+command -v zed
 
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
