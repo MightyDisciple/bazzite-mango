@@ -1,0 +1,22 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+manifest=/usr/share/mightydisciple/flatpaks.list
+state_dir=/var/lib/mightydisciple
+state_file=$state_dir/flatpaks.sha256
+
+[[ -r $manifest ]] || exit 0
+manifest_hash=$(sha256sum "$manifest" | cut -d ' ' -f 1)
+if [[ -r $state_file && $(<"$state_file") == "$manifest_hash" ]]; then
+    exit 0
+fi
+
+mapfile -t apps < <(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$manifest" | sort -u)
+[[ ${#apps[@]} -gt 0 ]] || exit 0
+
+flatpak remote-add --system --if-not-exists \
+    flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --system --noninteractive --or-update flathub "${apps[@]}"
+
+install -d -m 0755 "$state_dir"
+printf '%s\n' "$manifest_hash" > "$state_file"

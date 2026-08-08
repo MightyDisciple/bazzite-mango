@@ -1,0 +1,18 @@
+[Unit]
+Description=Reconcile MightyDisciple system Flatpaks
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/usr/share/mightydisciple/flatpaks.list
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/mightydisciple-flatpaks
+Restart=on-failure
+RestartSec=1m
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

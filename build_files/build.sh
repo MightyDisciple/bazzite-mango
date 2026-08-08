@@ -109,3 +109,4 @@ test -x /usr/bin/looking-glass-client
 
 systemctl enable podman.socket
 systemctl enable coolercontrold.service
+systemctl enable mightydisciple-flatpaks.service
