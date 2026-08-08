@@ -98,12 +98,15 @@ build $target_image=image_name $tag=default_tag $cache_repository="":
 
     set -euox pipefail
 
-    BUILD_ARGS=()
+    CACHE_FROM_ARGS=()
+    CACHE_TO_ARGS=()
     LABELS=()
     if [[ -n "${cache_repository}" ]]; then
-        BUILD_ARGS+=(
+        CACHE_FROM_ARGS+=(
             "--layers"
             "--cache-from" "${cache_repository}"
+        )
+        CACHE_TO_ARGS+=(
             "--cache-to" "${cache_repository}"
         )
     fi
@@ -129,9 +132,19 @@ build $target_image=image_name $tag=default_tag $cache_repository="":
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
     # This actually builds the image!
-    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
+    PODMAN_BUILD_ARGS=("${CACHE_FROM_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
 
-    podman build "${PODMAN_BUILD_ARGS[@]}" .
+    # Buildah pushes cache images while a multi-stage build is still running.
+    # A registry/cache race must not discard an otherwise valid image build.
+    # Retry while still consuming the existing remote cache, but without
+    # updating it. Layers pushed by the first attempt remain useful later.
+    if ! podman build "${PODMAN_BUILD_ARGS[@]}" "${CACHE_TO_ARGS[@]}" .; then
+        if [[ ${#CACHE_TO_ARGS[@]} -eq 0 ]]; then
+            exit 1
+        fi
+        echo "Remote cache update failed; retrying without --cache-to." >&2
+        podman build "${PODMAN_BUILD_ARGS[@]}" .
+    fi
 
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:
