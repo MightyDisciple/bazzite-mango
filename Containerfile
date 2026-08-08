@@ -1,6 +1,12 @@
-# Allow build scripts to be referenced without being copied into the final image
-FROM scratch AS ctx
-COPY build_files /
+# Keep the expensive Looking Glass build independent from ordinary image
+# changes so remote build cache hits survive package and system-file updates.
+FROM scratch AS looking-glass-ctx
+COPY build_files/install_looking_glass.sh /
+
+# Allow image customization files to be referenced without copying them into
+# the final image.
+FROM scratch AS image-ctx
+COPY build_files/build.sh /
 COPY system_files /system_files
 
 # Base Image
@@ -17,7 +23,7 @@ FROM ghcr.io/ublue-os/bazzite-dx-nvidia-gnome:stable AS base
 
 FROM base AS looking-glass-builder
 
-RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+RUN --mount=type=bind,from=looking-glass-ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/install_looking_glass.sh
@@ -41,7 +47,7 @@ COPY --from=looking-glass-builder /out/ /
 ## make modifications desired in your image and install packages by modifying the build.sh script
 ## the following RUN directive does all the things required to run "build.sh" as recommended.
 
-RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+RUN --mount=type=bind,from=image-ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \

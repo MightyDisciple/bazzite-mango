@@ -93,13 +93,20 @@ sudoif command *args:
 #
 
 # Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag:
+build $target_image=image_name $tag=default_tag $cache_repository="":
     #!/usr/bin/env bash
 
     set -euox pipefail
 
     BUILD_ARGS=()
     LABELS=()
+    if [[ -n "${cache_repository}" ]]; then
+        BUILD_ARGS+=(
+            "--layers"
+            "--cache-from" "${cache_repository}"
+            "--cache-to" "${cache_repository}"
+        )
+    fi
     if [[ -z "$(git status -s)" ]]; then
         GIT_SHA=$(git rev-parse --short HEAD)
         LABELS+=("--label" "io.artifacthub.package.readme-url=https://raw.githubusercontent.com/{{ repo_organization }}/{{ image_name }}/${GIT_SHA}/README.md")
