@@ -7,11 +7,6 @@ cp -avf "/ctx/system_files"/. /
 
 ### Install packages
 
-# Packages can be installed from any enabled yum repo on the image.
-# RPMfusion repos are available by default in ublue main images
-# List of rpmfusion packages can be found here:
-# https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/44/x86_64/repoview/index.html&protocol=https&redirect=1
-
 # Keep the custom image deliberately small. Noctalia v5 and OpenRGB are
 # packaged in Fedora 44. CoolerControl comes from Terra; keep that repository
 # disabled in the deployed image and enable it only for this image build.
@@ -81,14 +76,24 @@ dnf5 install -y --enable-repo=terra \
 
 dnf5 -y copr disable jdxcode/mise
 
-# Fail the image build early if Blender is missing.
-test -x /usr/bin/blender
-
-# Keep cooling and RGB control part of the image instead of rpm-ostree layers.
-rpm -q borgbackup coolercontrol liquidctl openrgb-udev-rules vorta zed
+# Fail the image build early when a requested component is missing.
+rpm -q \
+  blender \
+  borgbackup \
+  coolercontrol \
+  liquidctl \
+  mise \
+  niri \
+  noctalia \
+  openrgb-udev-rules \
+  vorta \
+  zed
 ! rpm -q code
+test -x /usr/bin/blender
 test -x /usr/bin/coolercontrol
 test -x /usr/bin/openrgb
+
+test -x /usr/libexec/mightydisciple-flatpaks
 command -v zed
 command -v borg
 command -v vorta
@@ -98,15 +103,7 @@ command -v vorta
 test -x /usr/bin/looking-glass-client
 ! ldd /usr/bin/looking-glass-client | grep -q 'not found'
 
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
-
-#### Example for enabling a System Unit File
-
 systemctl enable podman.socket
 systemctl enable coolercontrold.service
 systemctl enable mightydisciple-flatpaks.service
+systemctl is-enabled mightydisciple-flatpaks.service
