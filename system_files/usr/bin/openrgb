@@ -1,4 +1,11 @@
 #!/bin/sh
 
+plugin_dir="${XDG_CONFIG_HOME:-$HOME/.config}/OpenRGB/plugins"
+plugin_path="${plugin_dir}/OpenRGBEffectsPlugin.so"
+mkdir -p "${plugin_dir}"
+if [ ! -e "${plugin_path}" ] && [ ! -L "${plugin_path}" ]; then
+    ln -s /usr/libexec/openrgb/plugins/OpenRGBEffectsPlugin.so "${plugin_path}"
+fi
+
 export QT_QPA_PLATFORM=xcb
 exec /usr/libexec/openrgb/OpenRGB.AppImage "$@"
