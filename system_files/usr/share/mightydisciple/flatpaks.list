@@ -1,4 +1,5 @@
 # Desired system Flatpaks. Bazzite's own selection remains untouched.
 com.bitwarden.desktop
 com.vivaldi.Vivaldi
+md.obsidian.Obsidian
 org.libreoffice.LibreOffice
