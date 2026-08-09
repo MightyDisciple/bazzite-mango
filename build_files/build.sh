@@ -21,6 +21,9 @@ dnf5 install -y \
   blender \
   borgbackup \
   fontconfig \
+  fuse-sshfs \
+  glib2 \
+  kde-connect \
   libdecor \
   libglvnd-egl \
   libsamplerate \
@@ -81,6 +84,9 @@ rpm -q \
   blender \
   borgbackup \
   coolercontrol \
+  fuse-sshfs \
+  glib2 \
+  kde-connect \
   liquidctl \
   mise \
   niri \
@@ -91,7 +97,10 @@ rpm -q \
 ! rpm -q code
 test -x /usr/bin/blender
 test -x /usr/bin/coolercontrol
+test -x /usr/bin/gdbus
+test -x /usr/bin/kdeconnect-cli
 test -x /usr/bin/openrgb
+test -x /usr/bin/sshfs
 
 test -x /usr/libexec/mightydisciple-flatpaks
 command -v zed
