@@ -79,7 +79,6 @@ choose_project() {
   zenity --list \
     --title='Unity (Mutterbox)' \
     --text='Kies een Unity-project' \
-    --search-column=1 \
     --print-column=3 \
     --hide-column=3 \
     --width=760 \
