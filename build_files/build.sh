@@ -106,8 +106,10 @@ rpm -q \
 test -x /usr/bin/blender
 test -x /usr/bin/coolercontrol
 test -x /usr/bin/dbus-run-session
+test -x /usr/bin/fusermount3
 test -x /usr/bin/gdbus
 test -x /usr/bin/kdeconnect-cli
+test -x /usr/bin/mountpoint
 test -x /usr/bin/mutterbox
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs

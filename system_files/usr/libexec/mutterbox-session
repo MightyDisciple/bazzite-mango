@@ -18,17 +18,20 @@ else
 fi
 launcher_pid=$!
 
-root_geometry=$(xwininfo -root 2>/dev/null || true)
-root_width=$(sed -n 's/^  Width: //p' <<<"$root_geometry")
-root_height=$(sed -n 's/^  Height: //p' <<<"$root_geometry")
-root_area=$(( ${root_width:-0} * ${root_height:-0} ))
-
 seen_window=false
 main_undecorated=false
 empty_ticks=0
 launcher_done_ticks=0
+root_area=0
 
 while :; do
+  if ! $main_undecorated; then
+    root_geometry=$(xwininfo -root 2>/dev/null || true)
+    root_width=$(sed -n 's/^  Width: //p' <<<"$root_geometry")
+    root_height=$(sed -n 's/^  Height: //p' <<<"$root_geometry")
+    root_area=$(( ${root_width:-0} * ${root_height:-0} ))
+  fi
+
   client_property=$(xprop -root _NET_CLIENT_LIST_STACKING 2>/dev/null || true)
   client_ids=$(sed 's/^.*# //' <<<"$client_property" | tr ',' ' ')
   visible_clients=0

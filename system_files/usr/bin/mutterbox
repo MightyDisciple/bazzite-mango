@@ -83,4 +83,42 @@ if (($# == 0)); then
 fi
 
 session_helper=${MUTTERBOX_SESSION_HELPER:-/usr/libexec/mutterbox-session}
-exec dbus-run-session -- mutter --wayland --devkit -- "$session_helper" "$@"
+host_runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+outer_wayland_display=${WAYLAND_DISPLAY:-wayland-0}
+if [[ $outer_wayland_display != /* ]]; then
+  outer_wayland_display="$host_runtime_dir/$outer_wayland_display"
+fi
+
+mutterbox_runtime=$(mktemp -d "$host_runtime_dir/mutterbox.XXXXXX") || {
+  show_error 'De tijdelijke Mutterbox-runtime kon niet worden aangemaakt.'
+  exit 1
+}
+chmod 0700 "$mutterbox_runtime"
+
+cleanup_runtime() {
+  case $mutterbox_runtime in
+    "$host_runtime_dir"/mutterbox.*)
+      if mountpoint -q "$mutterbox_runtime/doc" 2>/dev/null; then
+        fusermount3 -u "$mutterbox_runtime/doc" 2>/dev/null || true
+      fi
+      rm -rf -- "$mutterbox_runtime"
+      ;;
+  esac
+}
+trap cleanup_runtime EXIT HUP INT TERM
+
+# Preserve multimedia access without sharing portal and display state. Unix
+# sockets can safely be reached through these per-session symbolic links.
+for runtime_socket in pipewire-0 pipewire-0-manager; do
+  if [[ -S $host_runtime_dir/$runtime_socket ]]; then
+    ln -s "$host_runtime_dir/$runtime_socket" "$mutterbox_runtime/$runtime_socket"
+  fi
+done
+if [[ -d $host_runtime_dir/pulse ]]; then
+  ln -s "$host_runtime_dir/pulse" "$mutterbox_runtime/pulse"
+fi
+
+XDG_RUNTIME_DIR=$mutterbox_runtime \
+WAYLAND_DISPLAY=$outer_wayland_display \
+dbus-run-session -- \
+  mutter --wayland --devkit -- "$session_helper" "$@"
