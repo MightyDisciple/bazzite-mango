@@ -1,0 +1,83 @@
+#!/usr/bin/bash
+
+set -uo pipefail
+
+# This helper runs inside Mutter's nested display. It keeps the nested session
+# alive for desktop launchers that return immediately and removes only the
+# decoration of the large X11 main window. Smaller tool windows and dialogs
+# retain their controls and can still be moved inside Mutterbox.
+
+if [[ ${1:-} == --desktop ]]; then
+  if (($# != 2)); then
+    printf 'Usage: mutterbox --desktop DESKTOP-ID\n' >&2
+    exit 2
+  fi
+  gtk-launch "$2" &
+else
+  "$@" &
+fi
+launcher_pid=$!
+
+root_geometry=$(xwininfo -root 2>/dev/null || true)
+root_width=$(sed -n 's/^  Width: //p' <<<"$root_geometry")
+root_height=$(sed -n 's/^  Height: //p' <<<"$root_geometry")
+root_area=$(( ${root_width:-0} * ${root_height:-0} ))
+
+seen_window=false
+main_undecorated=false
+empty_ticks=0
+launcher_done_ticks=0
+
+while :; do
+  client_property=$(xprop -root _NET_CLIENT_LIST_STACKING 2>/dev/null || true)
+  client_ids=$(sed 's/^.*# //' <<<"$client_property" | tr ',' ' ')
+  visible_clients=0
+  largest_id=
+  largest_area=0
+
+  for client_id in $client_ids; do
+    [[ $client_id =~ ^0x[0-9a-fA-F]+$ ]] || continue
+    properties=$(xprop -id "$client_id" _NET_WM_WINDOW_TYPE WM_TRANSIENT_FOR 2>/dev/null || true)
+    if grep -q '^_NET_WM_WINDOW_TYPE(ATOM)' <<<"$properties"; then
+      grep -q '_NET_WM_WINDOW_TYPE_NORMAL' <<<"$properties" || continue
+    fi
+    grep -q '^WM_TRANSIENT_FOR(WINDOW): window id #' <<<"$properties" && continue
+
+    geometry=$(xwininfo -id "$client_id" 2>/dev/null || true)
+    grep -q '^  Map State: IsViewable$' <<<"$geometry" || continue
+    width=$(sed -n 's/^  Width: //p' <<<"$geometry")
+    height=$(sed -n 's/^  Height: //p' <<<"$geometry")
+    area=$(( ${width:-0} * ${height:-0} ))
+    ((area > 10000)) || continue
+
+    ((visible_clients++))
+    if ((area > largest_area)); then
+      largest_area=$area
+      largest_id=$client_id
+    fi
+  done
+
+  if ((visible_clients > 0)); then
+    seen_window=true
+    empty_ticks=0
+  elif $seen_window; then
+    ((empty_ticks++))
+  fi
+
+  if ! $main_undecorated && [[ -n $largest_id ]] && ((root_area > 0)) && ((largest_area * 2 >= root_area)); then
+    xprop -id "$largest_id" \
+      -f _MOTIF_WM_HINTS 32c \
+      -set _MOTIF_WM_HINTS '2, 0, 0, 0, 0' >/dev/null 2>&1 || true
+    main_undecorated=true
+  fi
+
+  if ! kill -0 "$launcher_pid" 2>/dev/null; then
+    ((launcher_done_ticks++))
+    $seen_window && ((empty_ticks >= 4)) && break
+    ! $seen_window && ((launcher_done_ticks >= 30)) && break
+  fi
+
+  sleep 0.25
+done
+
+wait "$launcher_pid" 2>/dev/null || true

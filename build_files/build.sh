@@ -29,10 +29,14 @@ dnf5 install -y \
   libsamplerate \
   libxkbcommon \
   mise \
+  mutter-devkit \
   nettle \
   niri \
   noctalia \
-  pipewire-libs
+  pipewire-libs \
+  xprop \
+  xwininfo \
+  zenity
 
 # Vorta provides the desktop interface for configuring, scheduling, browsing,
 # and restoring Borg backups. Keep Borg itself installed for recovery use.
@@ -89,18 +93,26 @@ rpm -q \
   kde-connect \
   liquidctl \
   mise \
+  mutter-devkit \
   niri \
   noctalia \
   openrgb-udev-rules \
+  xprop \
+  xwininfo \
+  zenity \
   vorta \
   zed
 ! rpm -q code
 test -x /usr/bin/blender
 test -x /usr/bin/coolercontrol
+test -x /usr/bin/dbus-run-session
 test -x /usr/bin/gdbus
 test -x /usr/bin/kdeconnect-cli
+test -x /usr/bin/mutterbox
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs
+test -x /usr/libexec/mutter-devkit
+test -x /usr/libexec/mutterbox-session
 
 test -x /usr/libexec/mightydisciple-flatpaks
 command -v zed

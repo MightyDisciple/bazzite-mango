@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Mutterbox
+GenericName=Nested application launcher
+Comment=Open an incompatible X11 application inside Mutter
+Icon=org.gnome.Mutter.Mdk
+Exec=/usr/bin/mutterbox
+Terminal=false
+Categories=Utility;
+Keywords=Mutter;Nested;X11;Compatibility;Niri;
+StartupNotify=true

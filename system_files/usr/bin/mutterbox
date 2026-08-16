@@ -1,0 +1,86 @@
+#!/usr/bin/bash
+
+set -uo pipefail
+
+show_error() {
+  zenity --error --title='Mutterbox' --text="$1" 2>/dev/null || printf 'Mutterbox: %s\n' "$1" >&2
+}
+
+choose_desktop_app() {
+  local desktop_file desktop_id name hidden
+  local -a rows=()
+  declare -A seen=()
+
+  while IFS= read -r -d '' desktop_file; do
+    desktop_id=${desktop_file##*/}
+    desktop_id=${desktop_id%.desktop}
+    [[ $desktop_id == org.mightydisciple.Mutterbox ]] && continue
+    [[ -v seen[$desktop_id] ]] && continue
+    seen[$desktop_id]=1
+
+    hidden=$(sed -n 's/^\(Hidden\|NoDisplay\)=//p' "$desktop_file" | head -n 1)
+    [[ ${hidden,,} == true ]] && continue
+    name=$(sed -n 's/^Name=//p' "$desktop_file" | head -n 1)
+    [[ -n $name ]] || continue
+    rows+=("$name" "$desktop_id")
+  done < <(
+    find \
+      "${XDG_DATA_HOME:-$HOME/.local/share}/applications" \
+      /usr/local/share/applications \
+      /usr/share/applications \
+      -maxdepth 1 -type f -name '*.desktop' -print0 2>/dev/null
+  )
+
+  if ((${#rows[@]} == 0)); then
+    show_error 'Er zijn geen applicatielaunchers gevonden.'
+    return 1
+  fi
+
+  zenity --list \
+    --title='Open in Mutterbox' \
+    --text='Kies een applicatie' \
+    --search-column=1 \
+    --print-column=2 \
+    --hide-column=2 \
+    --width=640 \
+    --height=720 \
+    --column='Applicatie' \
+    --column='Desktop-ID' \
+    "${rows[@]}"
+}
+
+if [[ ${1:-} == --help || ${1:-} == -h ]]; then
+  cat <<'EOF'
+Gebruik:
+  mutterbox                         Kies een applicatie uit een lijst
+  mutterbox --desktop DESKTOP-ID    Start een .desktop-applicatie
+  mutterbox -- COMMAND [ARGUMENTEN] Start een commando
+  mutterbox COMMAND [ARGUMENTEN]    Start een commando
+
+Mutterbox draait de applicatie in een nested Mutter-compositor. De buitenste
+titelbalk blijft zichtbaar; de dubbele titelbalk van het grote X11-hoofdvenster
+wordt automatisch verwijderd.
+EOF
+  exit 0
+fi
+
+if ! command -v mutter >/dev/null; then
+  show_error 'mutter-devkit is niet geïnstalleerd. Installeer eerst de bijgewerkte Bazzite-image.'
+  exit 1
+fi
+
+if (($# == 0)); then
+  desktop_id=$(choose_desktop_app) || exit $?
+  [[ -n $desktop_id ]] || exit 0
+  set -- --desktop "$desktop_id"
+elif [[ $1 == -- ]]; then
+  shift
+fi
+
+if (($# == 0)); then
+  show_error 'Geen applicatie of commando opgegeven.'
+  exit 2
+fi
+
+session_helper=${MUTTERBOX_SESSION_HELPER:-/usr/libexec/mutterbox-session}
+exec dbus-run-session -- mutter --wayland --devkit -- "$session_helper" "$@"
