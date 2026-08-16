@@ -23,6 +23,7 @@ dnf5 install -y \
   fontconfig \
   fuse-sshfs \
   glib2 \
+  jq \
   kde-connect \
   libdecor \
   libglvnd-egl \
@@ -90,6 +91,7 @@ rpm -q \
   coolercontrol \
   fuse-sshfs \
   glib2 \
+  jq \
   kde-connect \
   liquidctl \
   mise \
@@ -111,6 +113,7 @@ test -x /usr/bin/gdbus
 test -x /usr/bin/kdeconnect-cli
 test -x /usr/bin/mountpoint
 test -x /usr/bin/mutterbox
+test -x /usr/bin/mutterbox-unity
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs
 test -x /usr/libexec/mutter-devkit

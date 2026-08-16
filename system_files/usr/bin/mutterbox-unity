@@ -1,0 +1,162 @@
+#!/usr/bin/bash
+
+set -uo pipefail
+
+show_error() {
+  zenity --error --title='Unity (Mutterbox)' --text="$1" 2>/dev/null || printf 'Unity (Mutterbox): %s\n' "$1" >&2
+}
+
+declare -a project_titles=()
+declare -a project_versions=()
+declare -a project_paths=()
+declare -A seen_projects=()
+
+add_project() {
+  local title=$1
+  local suggested_version=$2
+  local project_path=$3
+  local version_file version
+
+  [[ -d $project_path ]] || return 0
+  project_path=$(realpath "$project_path" 2>/dev/null || printf '%s' "$project_path")
+  [[ -v seen_projects[$project_path] ]] && return 0
+
+  version_file=$project_path/ProjectSettings/ProjectVersion.txt
+  [[ -r $version_file ]] || return 0
+  version=$(sed -n 's/^m_EditorVersion:[[:space:]]*//p' "$version_file" | head -n 1)
+  [[ -n $version ]] || version=$suggested_version
+  [[ -n $title ]] || title=${project_path##*/}
+
+  seen_projects[$project_path]=1
+  project_titles+=("$title")
+  project_versions+=("$version")
+  project_paths+=("$project_path")
+}
+
+collect_projects() {
+  local projects_file project_file project_path project_root title version
+
+  projects_file=${XDG_CONFIG_HOME:-$HOME/.config}/unityhub/projects-v1.json
+  if [[ -r $projects_file ]] && jq -e '.data | type == "object"' "$projects_file" >/dev/null 2>&1; then
+    while IFS=$'\t' read -r title version project_path; do
+      add_project "$title" "$version" "$project_path"
+    done < <(
+      jq -r '
+        .data
+        | to_entries
+        | sort_by(.value.lastModified // 0)
+        | reverse[]
+        | [(.value.title // ""), (.value.version // ""), .key]
+        | @tsv
+      ' "$projects_file"
+    )
+  fi
+
+  for project_root in "$HOME/UnityProject" "$HOME/UnityProjects"; do
+    [[ -d $project_root ]] || continue
+    while IFS= read -r -d '' project_file; do
+      project_path=${project_file%/ProjectSettings/ProjectVersion.txt}
+      add_project "${project_path##*/}" "" "$project_path"
+    done < <(
+      find "$project_root" -mindepth 3 -maxdepth 8 -type f \
+        -path '*/ProjectSettings/ProjectVersion.txt' -print0 2>/dev/null
+    )
+  done
+}
+
+choose_project() {
+  local -a rows=()
+  local index
+
+  for ((index = 0; index < ${#project_paths[@]}; index++)); do
+    rows+=(
+      "${project_titles[$index]}"
+      "${project_versions[$index]}"
+      "${project_paths[$index]}"
+    )
+  done
+
+  zenity --list \
+    --title='Unity (Mutterbox)' \
+    --text='Kies een Unity-project' \
+    --search-column=1 \
+    --print-column=3 \
+    --hide-column=3 \
+    --width=760 \
+    --height=600 \
+    --column='Project' \
+    --column='Editor' \
+    --column='Pad' \
+    "${rows[@]}"
+}
+
+print_help() {
+  cat <<'EOF'
+Gebruik:
+  mutterbox-unity                 Kies een Unity Hub-project uit een lijst
+  mutterbox-unity PROJECTPAD      Open dit project via Mutterbox
+  mutterbox-unity --list          Toon gevonden projecten in de terminal
+
+De vereiste Unity Editor-versie wordt gelezen uit
+ProjectSettings/ProjectVersion.txt en gezocht onder ~/Unity/Hub/Editor.
+EOF
+}
+
+collect_projects
+
+case ${1:-} in
+  --help|-h)
+    print_help
+    exit 0
+    ;;
+  --list)
+    for ((index = 0; index < ${#project_paths[@]}; index++)); do
+      printf '%s\t%s\t%s\n' \
+        "${project_titles[$index]}" \
+        "${project_versions[$index]}" \
+        "${project_paths[$index]}"
+    done
+    exit 0
+    ;;
+esac
+
+if (($# > 1)); then
+  print_help >&2
+  exit 2
+elif (($# == 1)); then
+  selected_project=$(realpath "$1" 2>/dev/null) || {
+    show_error "Projectmap niet gevonden:\n$1"
+    exit 1
+  }
+  version_file=$selected_project/ProjectSettings/ProjectVersion.txt
+  if [[ ! -r $version_file ]]; then
+    show_error "Dit is geen geldig Unity-project:\n$selected_project"
+    exit 1
+  fi
+else
+  if ((${#project_paths[@]} == 0)); then
+    show_error 'Geen Unity-projecten gevonden in Unity Hub, ~/UnityProject of ~/UnityProjects.'
+    exit 1
+  fi
+  selected_project=$(choose_project) || exit $?
+  [[ -n $selected_project ]] || exit 0
+  version_file=$selected_project/ProjectSettings/ProjectVersion.txt
+fi
+
+editor_version=$(sed -n 's/^m_EditorVersion:[[:space:]]*//p' "$version_file" | head -n 1)
+if [[ -z $editor_version ]]; then
+  show_error "Geen Unity Editor-versie gevonden in:\n$version_file"
+  exit 1
+fi
+
+editor_root=${UNITY_HUB_EDITOR_ROOT:-$HOME/Unity/Hub/Editor}
+unity_editor=$editor_root/$editor_version/Editor/Unity
+if [[ ! -x $unity_editor ]]; then
+  show_error "Unity Editor $editor_version is niet geïnstalleerd op:\n$unity_editor"
+  exit 1
+fi
+
+exec mutterbox \
+  "$unity_editor" \
+  -projectPath "$selected_project" \
+  -acceptSoftwareTermsForThisRunOnly

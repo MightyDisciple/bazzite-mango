@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Unity (Mutterbox)
+GenericName=Unity project launcher
+Comment=Choose and open a Unity project inside Mutterbox
+Icon=unityhub
+Exec=/usr/bin/mutterbox-unity
+Terminal=false
+Categories=Development;
+Keywords=Unity;Editor;Project;Mutterbox;Niri;
+StartupNotify=true

@@ -15,6 +15,7 @@ choose_desktop_app() {
     desktop_id=${desktop_file##*/}
     desktop_id=${desktop_id%.desktop}
     [[ $desktop_id == org.mightydisciple.Mutterbox ]] && continue
+    [[ $desktop_id == org.mightydisciple.UnityMutterbox ]] && continue
     [[ -v seen[$desktop_id] ]] && continue
     seen[$desktop_id]=1
 
