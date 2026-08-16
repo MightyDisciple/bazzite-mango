@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+set -uo pipefail
+
+rider=${MUTTERBOX_RIDER:-$HOME/.local/share/JetBrains/Toolbox/apps/rider/bin/rider}
+if [[ ! -x $rider ]]; then
+  printf 'Mutterbox Rider bridge: Rider not found at %s\n' "$rider" >&2
+  exit 1
+fi
+
+exec mutterbox-host "$rider" "$@"

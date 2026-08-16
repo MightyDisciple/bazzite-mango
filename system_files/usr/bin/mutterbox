@@ -85,6 +85,9 @@ fi
 session_helper=${MUTTERBOX_SESSION_HELPER:-/usr/libexec/mutterbox-session}
 host_runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 outer_wayland_display=${WAYLAND_DISPLAY:-wayland-0}
+host_display=${DISPLAY:-}
+host_xauthority=${XAUTHORITY:-}
+host_dbus_session_bus_address=${DBUS_SESSION_BUS_ADDRESS:-unix:path=$host_runtime_dir/bus}
 if [[ $outer_wayland_display != /* ]]; then
   outer_wayland_display="$host_runtime_dir/$outer_wayland_display"
 fi
@@ -121,4 +124,11 @@ fi
 XDG_RUNTIME_DIR=$mutterbox_runtime \
 WAYLAND_DISPLAY=$outer_wayland_display \
 dbus-run-session -- \
-  mutter --wayland --devkit -- "$session_helper" "$@"
+  mutter --wayland --devkit -- \
+  "$session_helper" \
+    --host-runtime "$host_runtime_dir" \
+    --host-wayland-display "$outer_wayland_display" \
+    --host-display "$host_display" \
+    --host-xauthority "$host_xauthority" \
+    --host-bus "$host_dbus_session_bus_address" \
+    -- "$@"

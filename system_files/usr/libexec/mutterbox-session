@@ -8,6 +8,35 @@ set -uo pipefail
 # Smaller tool windows and dialogs retain their controls and can still be moved
 # inside Mutterbox.
 
+while (($# > 0)); do
+  case $1 in
+    --host-runtime|--host-wayland-display|--host-display|--host-xauthority|--host-bus)
+      if (($# < 2)); then
+        printf 'Mutterbox session: missing value for %s\n' "$1" >&2
+        exit 2
+      fi
+      case $1 in
+        --host-runtime) MUTTERBOX_HOST_RUNTIME_DIR=$2 ;;
+        --host-wayland-display) MUTTERBOX_HOST_WAYLAND_DISPLAY=$2 ;;
+        --host-display) MUTTERBOX_HOST_DISPLAY=$2 ;;
+        --host-xauthority) MUTTERBOX_HOST_XAUTHORITY=$2 ;;
+        --host-bus) MUTTERBOX_HOST_DBUS_SESSION_BUS_ADDRESS=$2 ;;
+      esac
+      export MUTTERBOX_HOST_RUNTIME_DIR MUTTERBOX_HOST_WAYLAND_DISPLAY
+      export MUTTERBOX_HOST_DISPLAY MUTTERBOX_HOST_XAUTHORITY
+      export MUTTERBOX_HOST_DBUS_SESSION_BUS_ADDRESS
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 if [[ ${1:-} == --desktop ]]; then
   if (($# != 2)); then
     printf 'Usage: mutterbox --desktop DESKTOP-ID\n' >&2

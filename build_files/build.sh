@@ -115,6 +115,8 @@ test -x /usr/bin/gdbus
 test -x /usr/bin/kdeconnect-cli
 test -x /usr/bin/mountpoint
 test -x /usr/bin/mutterbox
+test -x /usr/bin/mutterbox-host
+test -x /usr/bin/mutterbox-rider
 test -x /usr/bin/mutterbox-unity
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs

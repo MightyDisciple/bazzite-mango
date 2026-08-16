@@ -1,0 +1,41 @@
+#!/usr/bin/bash
+
+set -uo pipefail
+
+if (($# == 0)); then
+  printf 'Usage: mutterbox-host COMMAND [ARGUMENTS...]\n' >&2
+  exit 2
+fi
+
+# Outside Mutterbox there is no display boundary to cross.
+if [[ -z ${MUTTERBOX_HOST_RUNTIME_DIR:-} ]]; then
+  exec "$@"
+fi
+
+host_runtime_dir=$MUTTERBOX_HOST_RUNTIME_DIR
+host_wayland_display=${MUTTERBOX_HOST_WAYLAND_DISPLAY:-}
+host_display=${MUTTERBOX_HOST_DISPLAY:-}
+host_xauthority=${MUTTERBOX_HOST_XAUTHORITY:-}
+host_bus=${MUTTERBOX_HOST_DBUS_SESSION_BUS_ADDRESS:-unix:path=$host_runtime_dir/bus}
+
+export XDG_RUNTIME_DIR=$host_runtime_dir
+export DBUS_SESSION_BUS_ADDRESS=$host_bus
+
+if [[ -n $host_wayland_display ]]; then
+  export WAYLAND_DISPLAY=$host_wayland_display
+else
+  unset WAYLAND_DISPLAY
+fi
+if [[ -n $host_display ]]; then
+  export DISPLAY=$host_display
+else
+  unset DISPLAY
+fi
+if [[ -n $host_xauthority ]]; then
+  export XAUTHORITY=$host_xauthority
+else
+  unset XAUTHORITY
+fi
+
+# Detach the host application from the nested compositor's lifetime.
+exec setsid -f -- "$@"

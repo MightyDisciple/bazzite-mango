@@ -6,6 +6,31 @@ show_error() {
   zenity --error --title='Unity (Mutterbox)' --text="$1" 2>/dev/null || printf 'Unity (Mutterbox): %s\n' "$1" >&2
 }
 
+configure_rider_bridge() {
+  local prefs_file encoded_editor current_editor bridge_editor encoded_bridge
+
+  prefs_file=$HOME/.local/share/unity3d/prefs
+  [[ -r $prefs_file && -w $prefs_file ]] || return 0
+
+  encoded_editor=$(sed -n 's#.*<pref name="kScriptsDefaultApp" type="string">\([^<]*\)</pref>.*#\1#p' "$prefs_file" | head -n 1)
+  [[ -n $encoded_editor ]] || return 0
+  current_editor=$(printf '%s' "$encoded_editor" | base64 --decode 2>/dev/null || true)
+
+  case $current_editor in
+    */JetBrains/Toolbox/apps/rider/bin/rider|*/system_files/usr/bin/mutterbox-rider|/usr/bin/mutterbox-rider)
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+
+  bridge_editor=${MUTTERBOX_RIDER_BRIDGE:-/usr/bin/mutterbox-rider}
+  [[ -x $bridge_editor ]] || return 0
+  [[ $current_editor == "$bridge_editor" ]] && return 0
+  encoded_bridge=$(printf '%s' "$bridge_editor" | base64 --wrap=0)
+  sed -i "s#\(<pref name=\"kScriptsDefaultApp\" type=\"string\">\)[^<]*\(</pref>\)#\1${encoded_bridge}\2#" "$prefs_file"
+}
+
 declare -a project_titles=()
 declare -a project_versions=()
 declare -a project_paths=()
@@ -102,6 +127,7 @@ EOF
 }
 
 collect_projects
+configure_rider_bridge
 
 case ${1:-} in
   --help|-h)
