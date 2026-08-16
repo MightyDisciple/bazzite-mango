@@ -40,7 +40,6 @@ choose_desktop_app() {
   zenity --list \
     --title='Open in Mutterbox' \
     --text='Kies een applicatie' \
-    --search-column=1 \
     --print-column=2 \
     --hide-column=2 \
     --width=640 \
