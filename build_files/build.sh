@@ -35,6 +35,7 @@ dnf5 install -y \
   niri \
   noctalia \
   pipewire-libs \
+  wmctrl \
   xprop \
   xwininfo \
   zenity
@@ -99,6 +100,7 @@ rpm -q \
   niri \
   noctalia \
   openrgb-udev-rules \
+  wmctrl \
   xprop \
   xwininfo \
   zenity \
@@ -116,6 +118,7 @@ test -x /usr/bin/mutterbox
 test -x /usr/bin/mutterbox-unity
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs
+test -x /usr/bin/wmctrl
 test -x /usr/libexec/mutter-devkit
 test -x /usr/libexec/mutterbox-session
 
