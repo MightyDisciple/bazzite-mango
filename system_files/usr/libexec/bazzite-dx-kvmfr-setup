@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+
+set -euo pipefail
+source /usr/lib/ujust/ujust.sh
+
+echo 'KVMFR provides shared memory for Looking Glass and changes the next deployment.'
+if [[ $(Choose Continue Cancel) == Cancel ]]; then
+  exit 0
+fi
+
+sudo install -d /etc/modprobe.d /etc/udev/rules.d
+printf '%s\n' \
+  '# The allocation size is controlled by the kvmfr.static_size_mb kernel argument.' \
+  | sudo tee /etc/modprobe.d/kvmfr.conf >/dev/null
+printf '%s\n' \
+  'SUBSYSTEM=="kvmfr", GROUP="qemu", MODE="0660", TAG+="uaccess"' \
+  | sudo tee /etc/udev/rules.d/99-kvmfr.rules >/dev/null
+
+rpm-ostree kargs --append-if-missing='kvmfr.static_size_mb=128'
+
+if sudo modprobe kvmfr static_size_mb=128; then
+  sudo udevadm trigger --subsystem-match=kvmfr
+fi
+
+echo 'KVMFR is configured with 128 MiB shared memory. Reboot before relying on it.'

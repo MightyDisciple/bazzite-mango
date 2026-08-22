@@ -1,0 +1,26 @@
+#!/usr/bin/bash
+
+set -euo pipefail
+
+readonly state_dir=/etc/ublue
+readonly state_file=${state_dir}/dx-groups
+readonly setup_version=1
+
+if [[ -f ${state_file} ]] && [[ $(<"${state_file}") == "${setup_version}" ]]; then
+  exit 0
+fi
+
+install -d "${state_dir}"
+
+for group_name in docker libvirt; do
+  if ! getent group "${group_name}" >/dev/null; then
+    grep "^${group_name}:" /usr/lib/group >> /etc/group
+  fi
+done
+
+while IFS= read -r user; do
+  [[ -n ${user} ]] || continue
+  usermod -aG docker,libvirt "${user}"
+done < <(getent group wheel | cut -d: -f4 | tr ',' '\n')
+
+printf '%s\n' "${setup_version}" > "${state_file}"

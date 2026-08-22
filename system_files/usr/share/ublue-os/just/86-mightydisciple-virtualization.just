@@ -83,7 +83,7 @@ workstation-virtualization ACTION="":
             lspci -nnk -s 01:00.1
             ;;
         kvmfr)
-            ujust setup-virtualization kvmfr
+            sudo /usr/libexec/bazzite-dx-kvmfr-setup
             ;;
         setup)
             ujust setup-virtualization

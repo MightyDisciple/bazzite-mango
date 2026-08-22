@@ -6,7 +6,7 @@ FROM scratch AS image-ctx
 COPY build_files/build.sh /
 COPY system_files /system_files
 
-FROM ghcr.io/ublue-os/bazzite-dx-nvidia-gnome:stable AS base
+FROM ghcr.io/ublue-os/bazzite-gnome-nvidia:stable AS base
 
 FROM base AS looking-glass-builder
 RUN --mount=type=bind,from=looking-glass-ctx,source=/,target=/ctx \

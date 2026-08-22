@@ -12,9 +12,14 @@ cp -avf "/ctx/system_files"/. /
 # disabled in the deployed image and enable it only for this image build.
 dnf5 -y copr enable jdxcode/mise
 
-# The Bazzite DX base image includes Visual Studio Code. Replace it with Zed
-# so the remote editor is managed as part of the image instead of as a local
-# rpm-ostree override. Zed is provided by Bazzite's existing Terra repository.
+# Recreate the container tooling shipped by Bazzite DX on top of the regular
+# Bazzite GNOME NVIDIA image. Keep Docker's repository disabled outside this
+# one explicit transaction.
+dnf5 config-manager addrepo --from-repofile='https://download.docker.com/linux/fedora/docker-ce.repo'
+dnf5 config-manager setopt docker-ce-stable.enabled=0
+
+# Ensure Visual Studio Code is absent and use Zed as the image-managed editor.
+# Zed is provided by Bazzite's existing Terra repository.
 dnf5 remove -y code
 
 dnf5 install -y \
@@ -25,6 +30,7 @@ dnf5 install -y \
   glib2 \
   jq \
   kde-connect \
+  labwc \
   libdecor \
   libglvnd-egl \
   libsamplerate \
@@ -39,6 +45,27 @@ dnf5 install -y \
   xprop \
   xwininfo \
   zenity
+
+# Bazzite DX's native virtualization stack is required for PCI passthrough and
+# Looking Glass. Avoid weak dependencies to keep the custom image focused.
+dnf5 --setopt=install_weak_deps=False install -y \
+  edk2-ovmf \
+  guestfs-tools \
+  libvirt \
+  qemu \
+  qemu-kvm \
+  virt-manager
+
+dnf5 install -y --enable-repo=docker-ce-stable \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-ce \
+  docker-ce-cli \
+  docker-compose-plugin
+
+# Required for Docker-in-Docker and devcontainer networking.
+install -d /etc/modules-load.d
+printf 'iptable_nat\n' > /etc/modules-load.d/ip_tables.conf
 
 # Vorta provides the desktop interface for configuring, scheduling, browsing,
 # and restoring Borg backups. Keep Borg itself installed for recovery use.
@@ -90,16 +117,28 @@ rpm -q \
   blender \
   borgbackup \
   coolercontrol \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-ce \
+  docker-ce-cli \
+  docker-compose-plugin \
+  edk2-ovmf \
   fuse-sshfs \
+  guestfs-tools \
   glib2 \
   jq \
   kde-connect \
+  labwc \
+  libvirt \
   liquidctl \
   mise \
   mutter-devkit \
   niri \
   noctalia \
   openrgb-udev-rules \
+  qemu \
+  qemu-kvm \
+  virt-manager \
   wmctrl \
   xprop \
   xwininfo \
@@ -113,6 +152,10 @@ test -x /usr/bin/dbus-run-session
 test -x /usr/bin/fusermount3
 test -x /usr/bin/gdbus
 test -x /usr/bin/kdeconnect-cli
+test -x /usr/bin/labwc
+test -x /usr/bin/docker
+test -x /usr/bin/qemu-system-x86_64
+test -x /usr/bin/virt-manager
 test -x /usr/bin/mountpoint
 test -x /usr/bin/mutterbox
 test -x /usr/bin/mutterbox-host
@@ -125,6 +168,9 @@ test -x /usr/libexec/mutter-devkit
 test -x /usr/libexec/mutterbox-session
 
 test -x /usr/libexec/mightydisciple-flatpaks
+test -x /usr/libexec/bazzite-dx-groups
+test -x /usr/libexec/bazzite-dx-kvmfr-setup
+docker compose version
 command -v zed
 command -v borg
 command -v vorta
@@ -135,6 +181,8 @@ test -x /usr/bin/looking-glass-client
 ! ldd /usr/bin/looking-glass-client | grep -q 'not found'
 
 systemctl enable podman.socket
+systemctl enable docker.socket
+systemctl enable bazzite-dx-groups.service
 systemctl enable coolercontrold.service
 systemctl enable mightydisciple-flatpaks.service
 systemctl is-enabled mightydisciple-flatpaks.service
