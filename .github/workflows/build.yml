@@ -11,9 +11,6 @@ on:
       - main
     paths-ignore:
       - '**/README.md'
-      - Containerfile.looking-glass
-      - build_files/install_looking_glass.sh
-      - .github/workflows/looking-glass.yml
   workflow_dispatch:
 
 env:

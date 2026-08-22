@@ -1,6 +1,6 @@
-# Isolate build inputs from the final image.
-FROM scratch AS looking-glass-ctx
-COPY build_files/install_looking_glass.sh /
+# Looking Glass is compiled daily in its dedicated repository. This image only
+# imports the small, prebuilt Fedora 44 artifact.
+FROM ghcr.io/mightydisciple/looking-glass-client:b7-fedora44 AS looking-glass-artifact
 
 FROM scratch AS image-ctx
 COPY build_files/build.sh /
@@ -8,14 +8,8 @@ COPY system_files /system_files
 
 FROM ghcr.io/ublue-os/bazzite-gnome-nvidia:stable AS base
 
-FROM base AS looking-glass-builder
-RUN --mount=type=bind,from=looking-glass-ctx,source=/,target=/ctx \
-    --mount=type=cache,dst=/var/cache \
-    --mount=type=tmpfs,dst=/tmp \
-    /ctx/install_looking_glass.sh
-
 FROM base
-COPY --from=looking-glass-builder /out/ /
+COPY --from=looking-glass-artifact /usr/ /usr/
 
 RUN --mount=type=bind,from=image-ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
