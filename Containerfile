@@ -1,6 +1,6 @@
 # Looking Glass is compiled daily in its dedicated repository. This image only
 # imports the small, prebuilt Fedora 44 artifact.
-FROM ghcr.io/mightydisciple/looking-glass-client:b7-fedora44 AS looking-glass-artifact
+FROM ghcr.io/mightydisciple/looking-glass-client-artifact:b7-fedora44 AS looking-glass-artifact
 
 FROM scratch AS image-ctx
 COPY build_files/build.sh /
