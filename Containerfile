@@ -6,7 +6,7 @@ FROM scratch AS image-ctx
 COPY build_files/build.sh /
 COPY system_files /system_files
 
-FROM ghcr.io/ublue-os/bazzite-gnome-nvidia:stable AS base
+FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable AS base
 
 FROM base
 COPY --from=looking-glass-artifact /usr/ /usr/
