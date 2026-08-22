@@ -36,14 +36,10 @@ dnf5 install -y \
   libsamplerate \
   libxkbcommon \
   mise \
-  mutter-devkit \
   nettle \
   niri \
   noctalia \
   pipewire-libs \
-  wmctrl \
-  xprop \
-  xwininfo \
   zenity
 
 # Bazzite DX's native virtualization stack is required for PCI passthrough and
@@ -132,16 +128,12 @@ rpm -q \
   libvirt \
   liquidctl \
   mise \
-  mutter-devkit \
   niri \
   noctalia \
   openrgb-udev-rules \
   qemu \
   qemu-kvm \
   virt-manager \
-  wmctrl \
-  xprop \
-  xwininfo \
   zenity \
   vorta \
   zed
@@ -157,15 +149,11 @@ test -x /usr/bin/docker
 test -x /usr/bin/qemu-system-x86_64
 test -x /usr/bin/virt-manager
 test -x /usr/bin/mountpoint
-test -x /usr/bin/mutterbox
-test -x /usr/bin/mutterbox-host
-test -x /usr/bin/mutterbox-rider
-test -x /usr/bin/mutterbox-unity
+test -x /usr/bin/labwcbox
+test -x /usr/bin/labwcbox-unity
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs
-test -x /usr/bin/wmctrl
-test -x /usr/libexec/mutter-devkit
-test -x /usr/libexec/mutterbox-session
+test -x /usr/libexec/labwcbox-session
 
 test -x /usr/libexec/mightydisciple-flatpaks
 test -x /usr/libexec/bazzite-dx-groups

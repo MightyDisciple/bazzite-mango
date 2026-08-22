@@ -1,0 +1,62 @@
+#!/usr/bin/bash
+
+set -uo pipefail
+
+command_file=${LABWCBOX_COMMAND_FILE:?LABWCBOX_COMMAND_FILE is niet ingesteld}
+mapfile -d '' -t command <"$command_file"
+
+desktop_launcher=false
+if [[ ${command[0]:-} == --desktop ]]; then
+  if ((${#command[@]} != 2)); then
+    printf 'Gebruik: labwcbox --desktop DESKTOP-ID\n' >&2
+    exit 2
+  fi
+  desktop_launcher=true
+  gtk-launch "${command[1]}" &
+else
+  "${command[@]}" &
+fi
+launcher_pid=$!
+
+if $desktop_launcher; then
+  wait "$launcher_pid" 2>/dev/null || true
+  outer_window_seen=false
+  while kill -0 "${LABWC_PID:?LABWC_PID is niet ingesteld}" 2>/dev/null; do
+    if niri msg --json windows 2>/dev/null \
+      | jq -e --argjson pid "$LABWC_PID" 'any(.[]; .pid == $pid)' >/dev/null; then
+      outer_window_seen=true
+    elif $outer_window_seen; then
+      break
+    fi
+    sleep 0.5
+  done
+  exit 0
+fi
+
+launcher_done_ticks=0
+seen_window=false
+empty_ticks=0
+while :; do
+  if command -v lswt >/dev/null; then
+    window_count=$(lswt 2>/dev/null | wc -l)
+    if ((window_count > 0)); then
+      seen_window=true
+      empty_ticks=0
+    elif $seen_window; then
+      ((empty_ticks++))
+    fi
+  fi
+
+  if ! kill -0 "$launcher_pid" 2>/dev/null; then
+    ((launcher_done_ticks++))
+    if command -v lswt >/dev/null; then
+      $seen_window && ((empty_ticks >= 4)) && break
+      ! $seen_window && ((launcher_done_ticks >= 30)) && break
+    else
+      break
+    fi
+  fi
+  sleep 0.25
+done
+
+wait "$launcher_pid" 2>/dev/null || true

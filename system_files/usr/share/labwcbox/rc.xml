@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+    <gap>0</gap>
+  </core>
+  <placement>
+    <policy>center</policy>
+  </placement>
+  <theme>
+    <keepBorder>no</keepBorder>
+    <maximizedDecoration>none</maximizedDecoration>
+  </theme>
+  <keyboard>
+    <default />
+  </keyboard>
+  <mouse>
+    <default />
+  </mouse>
+  <windowRules>
+    <windowRule identifier="*" type="normal">
+      <action name="Maximize" />
+    </windowRule>
+  </windowRules>
+</labwc_config>
