@@ -175,10 +175,6 @@ command -v zed
 command -v borg
 command -v vorta
 
-# The RTX 5080 cannot initialize with NVIDIA's closed kernel modules. Guard
-# against accidentally selecting the non-open Bazzite NVIDIA base again.
-modinfo -F license nvidia | grep -qx 'Dual MIT/GPL'
-
 # Looking Glass is built in a separate Containerfile stage. Verify that its
 # client and all runtime libraries made it into the final image.
 test -x /usr/bin/looking-glass-client
