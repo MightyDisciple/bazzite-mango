@@ -2,8 +2,8 @@
 
 set -ouex pipefail
 
-# Recreate Bazzite DX's development and virtualization tooling on top of the
-# regular Bazzite GNOME NVIDIA image.
+# Add the development and virtualization tooling missing from the regular
+# Bazzite GNOME NVIDIA image.
 dnf5 config-manager addrepo \
   --from-repofile='https://download.docker.com/linux/fedora/docker-ce.repo'
 dnf5 config-manager setopt docker-ce-stable.enabled=0

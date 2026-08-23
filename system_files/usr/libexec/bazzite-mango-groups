@@ -3,7 +3,7 @@
 set -euo pipefail
 
 readonly state_dir=/etc/ublue
-readonly state_file=${state_dir}/dx-groups
+readonly state_file=${state_dir}/mango-groups
 readonly setup_version=1
 
 if [[ -f ${state_file} ]] && [[ $(<"${state_file}") == "${setup_version}" ]]; then

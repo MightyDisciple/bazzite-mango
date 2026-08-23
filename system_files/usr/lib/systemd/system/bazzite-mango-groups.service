@@ -3,7 +3,7 @@ Description=Add wheel members to Docker and libvirt groups
 
 [Service]
 Type=oneshot
-ExecStart=/usr/libexec/bazzite-dx-groups
+ExecStart=/usr/libexec/bazzite-mango-groups
 
 [Install]
 WantedBy=default.target

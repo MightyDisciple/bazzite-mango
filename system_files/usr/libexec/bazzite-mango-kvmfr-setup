@@ -3,7 +3,7 @@
 set -euo pipefail
 source /usr/lib/ujust/ujust.sh
 
-echo 'KVMFR provides shared memory for Looking Glass and changes the next deployment.'
+echo 'KVMFR provides shared memory for Looking Glass in Bazzite Mango.'
 if [[ $(Choose Continue Cancel) == Cancel ]]; then
   exit 0
 fi
