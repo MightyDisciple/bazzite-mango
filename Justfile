@@ -21,12 +21,23 @@ default:
 [group('Just')]
 check:
     #!/usr/bin/env bash
+    set -euo pipefail
+
     find . -type f -name "*.just" | while read -r file; do
     	echo "Checking syntax: $file"
     	just --unstable --fmt --check -f $file
     done
     echo "Checking syntax: Justfile"
     just --unstable --fmt --check -f Justfile
+
+    while IFS= read -r -d '' file; do
+        case "$(head -n 1 "${file}")" in
+            *'/bash'|*'/sh')
+                echo "Checking shell syntax: ${file}"
+                bash -n "${file}"
+                ;;
+        esac
+    done < <(find build_files system_files -type f -print0)
 
 # Fix Just Syntax
 [group('Just')]

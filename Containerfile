@@ -3,7 +3,7 @@
 FROM ghcr.io/mightydisciple/looking-glass-client-artifact:b7-fedora44 AS looking-glass-artifact
 
 FROM scratch AS image-ctx
-COPY build_files/build.sh /
+COPY build_files /build_files
 COPY system_files /system_files
 
 FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable AS base
@@ -15,6 +15,6 @@ RUN --mount=type=bind,from=image-ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
-    /ctx/build.sh
+    /ctx/build_files/build.sh
 
 RUN bootc container lint
