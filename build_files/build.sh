@@ -57,6 +57,7 @@ dnf5 install -y --enable-repo=terra \
 install -Dm0644 \
   /usr/share/mightydisciple/mango/config.conf \
   /etc/mango/config.conf
+mango -c /etc/mango/config.conf -p
 
 # Bazzite DX's native virtualization stack is required for PCI passthrough and
 # Looking Glass. Avoid weak dependencies to keep the custom image focused.
