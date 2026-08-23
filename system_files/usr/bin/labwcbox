@@ -53,7 +53,7 @@ Gebruik:
   labwcbox -- COMMAND [ARGUMENTEN]
   labwcbox COMMAND [ARGUMENTEN]
 
-Start een applicatie in een geneste Labwc-compositor onder Niri.
+Start een applicatie in een geneste Labwc-compositor onder Wayland.
 EOF
   exit 0
 fi

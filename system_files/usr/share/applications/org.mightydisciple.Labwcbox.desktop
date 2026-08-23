@@ -7,5 +7,5 @@ Icon=labwc
 Exec=/usr/bin/labwcbox
 Terminal=false
 Categories=Utility;
-Keywords=Labwc;Nested;X11;Compatibility;Niri;
+Keywords=Labwc;Nested;X11;Compatibility;Mango;Wayland;
 StartupNotify=true

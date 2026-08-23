@@ -7,5 +7,5 @@ Icon=unityhub
 Exec=/usr/bin/labwcbox-unity
 Terminal=false
 Categories=Development;
-Keywords=Unity;Editor;Project;Labwcbox;Niri;
+Keywords=Unity;Editor;Project;Labwcbox;Mango;Wayland;
 StartupNotify=true

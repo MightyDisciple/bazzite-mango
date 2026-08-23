@@ -5,33 +5,16 @@ set -uo pipefail
 command_file=${LABWCBOX_COMMAND_FILE:?LABWCBOX_COMMAND_FILE is niet ingesteld}
 mapfile -d '' -t command <"$command_file"
 
-desktop_launcher=false
 if [[ ${command[0]:-} == --desktop ]]; then
   if ((${#command[@]} != 2)); then
     printf 'Gebruik: labwcbox --desktop DESKTOP-ID\n' >&2
     exit 2
   fi
-  desktop_launcher=true
   gtk-launch "${command[1]}" &
 else
   "${command[@]}" &
 fi
 launcher_pid=$!
-
-if $desktop_launcher; then
-  wait "$launcher_pid" 2>/dev/null || true
-  outer_window_seen=false
-  while kill -0 "${LABWC_PID:?LABWC_PID is niet ingesteld}" 2>/dev/null; do
-    if niri msg --json windows 2>/dev/null \
-      | jq -e --argjson pid "$LABWC_PID" 'any(.[]; .pid == $pid)' >/dev/null; then
-      outer_window_seen=true
-    elif $outer_window_seen; then
-      break
-    fi
-    sleep 0.5
-  done
-  exit 0
-fi
 
 launcher_done_ticks=0
 seen_window=false

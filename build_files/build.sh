@@ -18,9 +18,13 @@ dnf5 -y copr enable jdxcode/mise
 dnf5 config-manager addrepo --from-repofile='https://download.docker.com/linux/fedora/docker-ce.repo'
 dnf5 config-manager setopt docker-ce-stable.enabled=0
 
-# Ensure Visual Studio Code is absent and use Zed as the image-managed editor.
+# Ensure Visual Studio Code and the retired Niri session are absent. Mango has
+# native, rootful XWayland support and must not use xwayland-satellite.
 # Zed is provided by Bazzite's existing Terra repository.
-dnf5 remove -y code
+dnf5 remove -y \
+  code \
+  niri \
+  xwayland-satellite
 
 dnf5 install -y \
   blender \
@@ -37,10 +41,23 @@ dnf5 install -y \
   libxkbcommon \
   mise \
   nettle \
-  niri \
   noctalia \
   pipewire-libs \
+  polkit \
+  xorg-x11-server-Xwayland \
   zenity
+
+# Mango is packaged by Terra, as recommended by its Fedora installation guide.
+# Its own XWayland integration replaces Niri's xwayland-satellite setup.
+dnf5 install -y --enable-repo=terra \
+  mangowm \
+  xdg-desktop-portal-wlr
+
+# Use the personal Mango profile as the fallback for users without a local
+# ~/.config/mango/config.conf. A local config continues to take precedence.
+install -Dm0644 \
+  /usr/share/mightydisciple/mango/config.conf \
+  /etc/mango/config.conf
 
 # Bazzite DX's native virtualization stack is required for PCI passthrough and
 # Looking Glass. Avoid weak dependencies to keep the custom image focused.
@@ -106,12 +123,18 @@ dnf5 install -y --enable-repo=terra \
   liquidctl \
   zed
 
+# The official Fedora package configures OpenAI's signed repository. Installing
+# from that repository keeps the large ChatGPT/Codex desktop app out of Git and
+# lets subsequent image builds receive signed updates.
+dnf5 install -y chatgpt
+
 dnf5 -y copr disable jdxcode/mise
 
 # Fail the image build early when a requested component is missing.
 rpm -q \
   blender \
   borgbackup \
+  chatgpt \
   coolercontrol \
   containerd.io \
   docker-buildx-plugin \
@@ -128,18 +151,23 @@ rpm -q \
   libvirt \
   liquidctl \
   mise \
-  niri \
+  mangowm \
   noctalia \
   openrgb-udev-rules \
+  polkit \
   qemu \
   qemu-kvm \
   virt-manager \
+  xorg-x11-server-Xwayland \
   zenity \
   vorta \
   zed
 ! rpm -q code
+! rpm -q niri
+! rpm -q xwayland-satellite
 test -x /usr/bin/blender
 test -x /usr/bin/coolercontrol
+test -x /usr/bin/chatgpt
 test -x /usr/bin/dbus-run-session
 test -x /usr/bin/fusermount3
 test -x /usr/bin/gdbus
@@ -151,11 +179,17 @@ test -x /usr/bin/virt-manager
 test -x /usr/bin/mountpoint
 test -x /usr/bin/labwcbox
 test -x /usr/bin/labwcbox-unity
+test -x /usr/bin/mango
+test -x /usr/bin/mmsg
+test -x /usr/bin/Xwayland
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs
 test -x /usr/libexec/labwcbox-session
 
 test -x /usr/libexec/mightydisciple-flatpaks
+test -f /etc/mango/config.conf
+test -f /usr/share/wayland-sessions/mango.desktop
+test -x /usr/lib/polkit-1/polkit-agent-helper-1
 test -x /usr/libexec/bazzite-dx-groups
 test -x /usr/libexec/bazzite-dx-kvmfr-setup
 docker compose version
