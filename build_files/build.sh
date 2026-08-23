@@ -133,7 +133,6 @@ dnf5 -y copr disable jdxcode/mise
 rpm -q \
   blender \
   borgbackup \
-  chatgpt \
   coolercontrol \
   containerd.io \
   docker-buildx-plugin \
@@ -150,22 +149,17 @@ rpm -q \
   libvirt \
   liquidctl \
   mise \
-  mangowm \
   noctalia \
   openrgb-udev-rules \
   qemu \
   qemu-kvm \
   virt-manager \
-  xorg-x11-server-Xwayland \
   zenity \
   vorta \
   zed
 ! rpm -q code
-! rpm -q niri
-! rpm -q xwayland-satellite
 test -x /usr/bin/blender
 test -x /usr/bin/coolercontrol
-test -x /usr/bin/chatgpt
 test -x /usr/bin/dbus-run-session
 test -x /usr/bin/fusermount3
 test -x /usr/bin/gdbus
@@ -177,16 +171,11 @@ test -x /usr/bin/virt-manager
 test -x /usr/bin/mountpoint
 test -x /usr/bin/labwcbox
 test -x /usr/bin/labwcbox-unity
-test -x /usr/bin/mango
-test -x /usr/bin/mmsg
-test -x /usr/bin/Xwayland
 test -x /usr/bin/openrgb
 test -x /usr/bin/sshfs
 test -x /usr/libexec/labwcbox-session
 
 test -x /usr/libexec/mightydisciple-flatpaks
-test -f /etc/mango/config.conf
-test -f /usr/share/wayland-sessions/mango.desktop
 test -x /usr/libexec/bazzite-dx-groups
 test -x /usr/libexec/bazzite-dx-kvmfr-setup
 docker compose version
