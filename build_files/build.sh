@@ -52,13 +52,6 @@ dnf5 install -y --enable-repo=terra \
   mangowm \
   xdg-desktop-portal-wlr
 
-# Use the personal Mango profile as the fallback for users without a local
-# ~/.config/mango/config.conf. A local config continues to take precedence.
-install -Dm0644 \
-  /usr/share/mightydisciple/mango/config.conf \
-  /etc/mango/config.conf
-mango -c /etc/mango/config.conf -p
-
 # Bazzite DX's native virtualization stack is required for PCI passthrough and
 # Looking Glass. Avoid weak dependencies to keep the custom image focused.
 dnf5 --setopt=install_weak_deps=False install -y \

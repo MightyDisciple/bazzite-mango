@@ -1,9 +1,9 @@
-set dotenv-filename := "image-template.env"
+set dotenv-filename := "image.env"
 set dotenv-load
 
 export image_name := env_var("IMAGE_NAME")
 export repo_organization := env_var("REPO_ORGANIZATION")
-export image_desc := env_var("IMAGE_DESC")
+export image_desc := env_var("IMAGE_DESCRIPTION")
 export image_keywords := env_var("IMAGE_KEYWORDS")
 export image_logo_url := env_var("IMAGE_LOGO_URL")
 export default_tag := env_var("DEFAULT_TAG")
