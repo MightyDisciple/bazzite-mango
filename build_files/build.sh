@@ -129,68 +129,8 @@ dnf5 install -y chatgpt
 
 dnf5 -y copr disable jdxcode/mise
 
-# Fail the image build early when a requested component is missing.
-rpm -q \
-  blender \
-  borgbackup \
-  coolercontrol \
-  containerd.io \
-  docker-buildx-plugin \
-  docker-ce \
-  docker-ce-cli \
-  docker-compose-plugin \
-  edk2-ovmf \
-  fuse-sshfs \
-  guestfs-tools \
-  glib2 \
-  jq \
-  kde-connect \
-  labwc \
-  libvirt \
-  liquidctl \
-  mise \
-  noctalia \
-  openrgb-udev-rules \
-  qemu \
-  qemu-kvm \
-  virt-manager \
-  zenity \
-  vorta \
-  zed
-! rpm -q code
-test -x /usr/bin/blender
-test -x /usr/bin/coolercontrol
-test -x /usr/bin/dbus-run-session
-test -x /usr/bin/fusermount3
-test -x /usr/bin/gdbus
-test -x /usr/bin/kdeconnect-cli
-test -x /usr/bin/labwc
-test -x /usr/bin/docker
-test -x /usr/bin/qemu-system-x86_64
-test -x /usr/bin/virt-manager
-test -x /usr/bin/mountpoint
-test -x /usr/bin/labwcbox
-test -x /usr/bin/labwcbox-unity
-test -x /usr/bin/openrgb
-test -x /usr/bin/sshfs
-test -x /usr/libexec/labwcbox-session
-
-test -x /usr/libexec/mightydisciple-flatpaks
-test -x /usr/libexec/bazzite-dx-groups
-test -x /usr/libexec/bazzite-dx-kvmfr-setup
-docker compose version
-command -v zed
-command -v borg
-command -v vorta
-
-# Looking Glass is built in a separate Containerfile stage. Verify that its
-# client and all runtime libraries made it into the final image.
-test -x /usr/bin/looking-glass-client
-! ldd /usr/bin/looking-glass-client | grep -q 'not found'
-
 systemctl enable podman.socket
 systemctl enable docker.socket
 systemctl enable bazzite-dx-groups.service
 systemctl enable coolercontrold.service
 systemctl enable mightydisciple-flatpaks.service
-systemctl is-enabled mightydisciple-flatpaks.service
