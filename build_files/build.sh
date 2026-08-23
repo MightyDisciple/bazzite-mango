@@ -43,7 +43,6 @@ dnf5 install -y \
   nettle \
   noctalia \
   pipewire-libs \
-  polkit \
   xorg-x11-server-Xwayland \
   zenity
 
@@ -154,7 +153,6 @@ rpm -q \
   mangowm \
   noctalia \
   openrgb-udev-rules \
-  polkit \
   qemu \
   qemu-kvm \
   virt-manager \
@@ -189,7 +187,6 @@ test -x /usr/libexec/labwcbox-session
 test -x /usr/libexec/mightydisciple-flatpaks
 test -f /etc/mango/config.conf
 test -f /usr/share/wayland-sessions/mango.desktop
-test -x /usr/lib/polkit-1/polkit-agent-helper-1
 test -x /usr/libexec/bazzite-dx-groups
 test -x /usr/libexec/bazzite-dx-kvmfr-setup
 docker compose version
