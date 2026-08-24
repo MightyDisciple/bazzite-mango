@@ -1,11 +1,11 @@
 ---
-name: Build container image
+name: Build Bazzite Mango
 on:
   pull_request:
     branches:
       - main
   schedule:
-    - cron: '05 10 * * *'  # 10:05am UTC everyday
+    - cron: '05 10 * * *'
   push:
     branches:
       - main
@@ -14,7 +14,13 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
+  IMAGE_NAME: "${{ github.event.repository.name }}"
+  IMAGE_DESC: "Personal Bazzite Mango workstation for game development"
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/153725485?s=200&v=4"
+  IMAGE_SOURCE_TAG: "stable"
+  SOURCE_ORG: "ublue-os"
+  BASE_IMAGE: "bazzite-gnome-nvidia-open"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -31,40 +37,141 @@ jobs:
       id-token: write
 
     steps:
-      # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Maximize build space
-        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
+      - name: Show disk space
+        run: sudo df -h
+
+      - name: Check if /mnt is there
+        id: check_mnt
+        run: |
+          if sudo mountpoint /mnt; then
+            echo "mnt_is_there=1" >>$GITHUB_OUTPUT
+          else
+            echo "mnt_is_there=0" >>$GITHUB_OUTPUT
+          fi
+
+      - name: Free Disk Space (Ubuntu)
+        if: ${{ steps.check_mnt.outputs.mnt_is_there == '1' }}
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+
+      - name: Mount BTRFS for podman storage
+        if: ${{ steps.check_mnt.outputs.mnt_is_there == '1' }}
+        uses: ublue-os/container-storage-action@dc1f4c8f17b672069e921f001132f7cf98a423a6 # main
 
       - name: Install just
-        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 #v4.0.0
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
 
       - name: Check Just Syntax
-        shell: bash
+        run: just check
+
+      - name: Get image major version
+        id: fetch_source_meta
+        env:
+          org: ${{ env.SOURCE_ORG }}
         run: |
-          just check
+          set -x
+          declare -i SOURCE_VERSION_MAJOR=0
 
-      - name: Image Name
-        id: image-name
+          SOURCE_VERSION=$(
+            skopeo inspect --no-tags --raw --config \
+              "docker://ghcr.io/${org}/${BASE_IMAGE}:${IMAGE_SOURCE_TAG}" | \
+              jq -r '.config.Labels["org.opencontainers.image.version"]'
+          )
+          if [[ -z ${SOURCE_VERSION} ]]; then
+            echo "::error::SOURCE_VERSION was not fetched correctly"
+            exit 1
+          fi
+          echo "SOURCE_VERSION=${SOURCE_VERSION}" >>$GITHUB_OUTPUT
+
+          SOURCE_VERSION_MAJOR=$([[ ${SOURCE_VERSION} =~ ^(.*-)?([[:digit:]]+) ]] && echo "${BASH_REMATCH[-1]}")
+          status=$?
+          if [[ ${status} -ne 0 ]] || [[ -z ${SOURCE_VERSION_MAJOR} ]] || (( SOURCE_VERSION_MAJOR <= 0 )); then
+            echo "::error::SOURCE_VERSION_MAJOR was not fetched correctly: ${SOURCE_VERSION_MAJOR}"
+            exit 1
+          fi
+          echo "SOURCE_VERSION_MAJOR=${SOURCE_VERSION_MAJOR}" >>$GITHUB_OUTPUT
+
+      - name: Build Image
+        id: build_image
         run: |
-          IMAGE_NAME=$(just image_name)
+          sudo -E buildah build \
+            --tag raw-img .
 
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
-
-      - name: Default Tag
-        id: gen-default-tag
+      - name: Apply Labels
+        id: relabel
+        env:
+          IMAGE_LABELS: |
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
+            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
+            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/main/Containerfile
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+            io.artifacthub.package.deprecated=false
+            io.artifacthub.package.keywords=bazzite,bootc,gamedev,gnome,mango,noctalia,nvidia,oci,unity
+            io.artifacthub.package.license=Apache-2.0
+            io.artifacthub.package.logo-url=${{ env.ARTIFACTHUB_LOGO_URL }}
+            io.artifacthub.package.prerelease=false
+            containers.bootc=1
         run: |
-          DEFAULT_TAG=$(just generate-default-tag)
+          version="${{ steps.fetch_source_meta.outputs.SOURCE_VERSION_MAJOR }}.$(date +%Y%m%d)"
+          mapfile -t labels <<< "${IMAGE_LABELS}"
+          labels+=(
+            "org.opencontainers.image.version=${version}"
+            "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          )
 
-          echo "DEFAULT_TAG=${DEFAULT_TAG}" >> $GITHUB_ENV
+          container=$(sudo buildah from raw-img)
+          for label in "${labels[@]}"; do
+            [[ -z ${label} ]] && continue
+            sudo buildah config --label "${label}" --annotation "${label}" "${container}"
+          done
+          sudo buildah commit --identity-label=false --rm "${container}" raw-img
+          echo "version=${version}" >>$GITHUB_OUTPUT
 
-      - name: Prepare environment
+      - name: Rechunk with Chunkah
+        id: rechunk
         run: |
-          # Lowercase the image uri https://github.com/macbre/push-to-ghcr/issues/12
-          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          set -xeuo pipefail
+          chunkah_config_file=$(mktemp "${RUNNER_TEMP}/chunkah-config.XXXXXX.json")
+          chunkah_output_dir=$(mktemp -d "${RUNNER_TEMP}/chunkah-output.XXXXXX")
+          trap 'rm -f "${chunkah_config_file}"; sudo rm -rf "${chunkah_output_dir}"' EXIT
+
+          sudo podman inspect raw-img >"${chunkah_config_file}"
+          sudo podman run --rm \
+            --mount=type=image,src=raw-img,target=/chunkah \
+            -v "${chunkah_config_file}:/chunkah-config.json:ro,Z" \
+            -v "${chunkah_output_dir}:/run/out:Z" \
+            -e SOURCE_DATE_EPOCH=0 \
+            quay.io/coreos/chunkah:latest \
+            build \
+            --verbose \
+            --compressed \
+            --max-layers 128 \
+            --prune /sysroot/ \
+            --label ostree.commit- --label ostree.final-diffid- \
+            --config /chunkah-config.json \
+            --output oci:/run/out/chunked
+
+          chunked_image=$(sudo podman pull "oci:${chunkah_output_dir}/chunked")
+          sudo podman tag "${chunked_image}" chunked-img
+          sudo podman untag raw-img
+          echo "ref=containers-storage:localhost/chunked-img" >>$GITHUB_OUTPUT
+
+      - name: Generate tags
+        id: generate_tags
+        run: |
+          version_tag="${{ steps.relabel.outputs.version }}"
+          build_tags=(
+            "stable-${version_tag}"
+            "latest"
+            "stable"
+            "stable-${{ steps.fetch_source_meta.outputs.SOURCE_VERSION_MAJOR }}"
+          )
+          echo "alias_tags=${build_tags[*]}" >>$GITHUB_OUTPUT
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -72,72 +179,60 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build Image
-        id: build-image
-        run: |
-          sudo "$(command -v just)" build \
-            ${IMAGE_NAME} \
-            ${DEFAULT_TAG}
-
-      - name: Rechunk with Chunkah
-        id: rechunk
-        run: |
-          sudo "$(command -v just)" rechunk \
-            ${IMAGE_NAME} \
-            ${DEFAULT_TAG}
-
-      - name: Generate Build Tags
-        id: gen-build-tags
-        run: |
-          alias_tags="$(just generate-build-tags \
-                        ${IMAGE_NAME} \
-                        ${DEFAULT_TAG})"
-
-          echo "Tags for this Action..."
-          echo "${alias_tags}"
-          echo "alias_tags=${alias_tags}" >> $GITHUB_OUTPUT
-
-      - name: Tag Image
-        id: tag-images
+      - name: Lowercase Image and Registry
+        id: lowercase
         env:
-          ALIAS_TAGS: ${{ steps.gen-build-tags.outputs.alias_tags }}
+          REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          IMAGE: ${{ env.IMAGE_NAME }}
         run: |
-          sudo "$(command -v just)" tag-images \
-            "${IMAGE_NAME}" \
-            "${DEFAULT_TAG}" \
-            "${ALIAS_TAGS}"
+          echo "registry=${REGISTRY,,}" >>$GITHUB_OUTPUT
+          echo "image=${IMAGE,,}" >>$GITHUB_OUTPUT
 
-      - name: Push To GHCR
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        id: push-image
+      - name: Push to GHCR
+        id: push
+        if: github.event_name != 'pull_request'
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
-          ALIAS_TAGS: ${{ steps.gen-build-tags.outputs.alias_tags }}
-        run: |
-          set -euox pipefail
-          for tag in ${ALIAS_TAGS}; do
-            sudo podman push --digestfile=/tmp/digestfile ${IMAGE_NAME}:${tag} ${IMAGE_REGISTRY}/${IMAGE_NAME}:${tag}
-          done
-
-          digest=$(< /tmp/digestfile)
-
-          echo "digest=${digest}" >> $GITHUB_OUTPUT
+          ALIAS_TAGS: ${{ steps.generate_tags.outputs.alias_tags }}
+          OUTPUT_IMAGE: ${{ steps.lowercase.outputs.registry }}/${{ steps.lowercase.outputs.image }}
+          RECHUNK_REF: ${{ steps.rechunk.outputs.ref }}
+          VERSION: ${{ steps.relabel.outputs.version }}
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            dest_image="${OUTPUT_IMAGE}:${VERSION}"
+            sudo skopeo copy ${RECHUNK_REF} docker://${dest_image}
+            for tag in ${ALIAS_TAGS}; do
+              dest_image="${OUTPUT_IMAGE}:${tag}"
+              sudo skopeo copy ${RECHUNK_REF} docker://${dest_image}
+            done
+            digest=$(sudo skopeo inspect --format '{{.Digest}}' docker://${OUTPUT_IMAGE}:${VERSION})
+            echo "digest=${digest}" >>$GITHUB_OUTPUT
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
         with:
-          # be careful when upgrading major versions
-          cosign-release: 'v3.1.2'
+          cosign-release: "v2.6.5"
 
       - name: Sign container image
-        id: sign-image
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name != 'pull_request'
         env:
-          COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
-          DIGEST: ${{ steps.push-image.outputs.digest }}
         run: |
-          # https://github.com/containers/container-libs/issues/388
-          # https://github.com/coreos/rpm-ostree/issues/5509
-          # use old bundle format, so we can use newer cosign 3.X.X instead of 2.X.X
-          cosign sign -y --new-bundle-format=false --use-signing-config=false --key env://COSIGN_PRIVATE_KEY ${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY --new-bundle-format=false \
+            ${{ steps.lowercase.outputs.registry }}/${{ steps.lowercase.outputs.image }}@${{ steps.push.outputs.digest }}
+
+  check:
+    name: Check all builds successful
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [build_push]
+    steps:
+      - name: Check Jobs
+        env:
+          JOBS: ${{ toJson(needs) }}
+        run: |
+          echo "${JOBS}" | jq -e 'all(.[]; .result == "success" or .result == "skipped")'
