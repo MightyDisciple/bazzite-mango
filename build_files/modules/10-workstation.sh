@@ -5,13 +5,6 @@ set -ouex pipefail
 # Keep optional repositories scoped to the transactions that require them.
 dnf5 -y copr enable jdxcode/mise
 
-# Zed replaces Code. Mango provides its own XWayland integration, so the old
-# Niri session and xwayland-satellite must not remain in the image.
-dnf5 remove -y \
-  code \
-  niri \
-  xwayland-satellite
-
 dnf5 install -y \
   blender \
   borgbackup \
